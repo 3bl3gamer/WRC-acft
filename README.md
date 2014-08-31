@@ -7,7 +7,7 @@
 
 ## Альфа-версия
 
-![whole.jpg](https://raw.githubusercontent.com/3bl3gamer/WRC-acft/master/media_v0.1/parts.jpg)
+![whole.jpg](https://raw.githubusercontent.com/3bl3gamer/WRC-acft/master/media_v0.1/whole.jpg)
 
 ### Что
 
