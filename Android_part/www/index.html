@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="format-detection" content="telephone=no" />
+		<!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
+		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+		<link rel="stylesheet" type="text/css" href="css/index.css" />
+		<meta name="msapplication-tap-highlight" content="no" />
+		<title>WRC</title>
+		<style>
+		.indicator {
+			position: relative;
+			width: 12px;
+			height: 12px;
+			border: 2px solid;
+			background: gray;
+			float: right;
+		}
+		.layer {
+			position: absolute;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+		}
+		.control_area {
+			position: absolute;
+			outline: 1px solid;
+		}
+		</style>
+	</head>
+	<body>
+		<script>
+			window.onerror = function(a,b,c)
+			{
+				alert([a,b,c])
+			}
+		</script>
+		<script src="cordova.js"></script>
+		<script src="droid.js"></script>
+		
+		<div id="log_box" class="layer">Hello World!<br></div>
+		<div id="controls_box" class="layer" style="opacity: 0.8;">
+			<div id="thrust_box" class="control_area" style="background:red;   width:50%; height:50%;  left:0;   top:0;"></div>
+			<div id="turn_box"   class="control_area" style="background:green; width:50%; height:50%;  left:0;   top:50%;"></div>
+			<div id="double_box" class="control_area" style="background:blue;  width:50%; height:100%; left:50%; top:0;"></div>
+		</div>
+<!--		<div id="indicator_box" class="layer">-->
+			<div id="response_indicator" class="indicator"></div>
+			<div id="error_indicator" class="indicator"></div>
+<!--		</div>-->
+		
+		<script>
+			function log(str)
+			{
+				log_box.innerHTML = str+"<br>"+log_box.innerHTML;
+			}
+			
+			
+			function flash_indicator(elem, color)
+			{
+				var s = elem.style;
+				s.transition = null;
+				s.background = color;
+				setTimeout(function() {
+					s.transition = "background 1s ease";
+					s.background = "gray";
+				}, 1);
+			}
+			
+			
+			function setup_controls(elem, onmove, onup)
+			{
+				var last_x=-1, last_y=-1;
+				elem.ontouchstart = function(e) {
+					e.preventDefault();
+					if (e.targetTouches.length > 1) return;
+					last_x = e.targetTouches[0].pageX;
+					last_y = e.targetTouches[0].pageY;
+				};
+				elem.ontouchmove = function(e) {
+					e.preventDefault();
+					var cx = e.targetTouches[0].pageX;//targetTouches
+					var cy = e.targetTouches[0].pageY;
+					onmove(cx-last_x, cy-last_y);
+					last_x = cx;
+					last_y = cy;
+				};
+				elem.ontouchend = function(e) {
+					e.preventDefault();
+					if (e.targetTouches.length > 0) return;
+					//last_x = last_y = -1;
+					onup();
+				};
+			}
+			
+			
+			var REMOTE_PORT = 25678;
+			var REMOTE_ADDR = (192<<24)|(168<<16)|(42<<8)|(0);//"\xC0\xA8\x2A\x01";//"\x7F\x00\x00\x01";
+			
+			
+			function on_UDP_data(addr, port, data)
+			{
+				flash_indicator(response_indicator, "green");
+				log(data);
+			}
+			
+			function on_UDP_recv_err(msg)
+			{
+				flash_indicator(error_indicator, "red");
+				alert(msg);
+			}
+			
+			
+			droid.UDP_bind(-1);
+			droid.UDP_startReceiver("on_UDP_data", "on_UDP_recv_err");
+			function send(msg)
+			{
+				droid.UDP_send(REMOTE_ADDR, REMOTE_PORT, msg);
+				log(msg)
+			}
+			send("PHello World!");
+			
+			
+			var cur_l = 154;
+			var cur_r = 155;
+			setup_controls(double_box, function(dx, dy) {
+				var new_l = Math.max(105, Math.min(cur_l-dx/3+dy/2, 195))
+				var new_r = Math.max(110, Math.min(cur_r-dx/3-dy/2, 200))
+				if ((new_l|0)!=(cur_l|0)) send("S18"+(new_l|0));
+				if ((new_r|0)!=(cur_r|0)) send("S17"+(new_r|0));
+				cur_l = new_l;
+				cur_r = new_r;
+			}, function() {
+				send("S18154");
+				send("S17155");
+				cur_l = 154;
+				cur_r = 155;
+			});
+			
+			var cur_lr = 150;
+			setup_controls(turn_box, function(dx, dy) {
+				var new_lr = Math.max(100, Math.min(cur_lr+dx/2, 200))
+				if ((new_lr|0) != (cur_lr|0)) send("S01"+(new_lr|0));
+				cur_lr = new_lr;
+			}, function() {
+				send("S01150");
+				cur_lr = 150;
+			});
+			
+			var cur_thrust = 100;
+			setup_controls(thrust_box, function(dx, dy) {
+				var new_thrust = Math.max(100, Math.min(cur_thrust+dx/10, 180))
+				if ((new_thrust|0) != (cur_thrust|0)) send("S00"+(new_thrust|0));
+				cur_thrust = new_thrust;
+			}, function() {});
+		</script>
+	</body>
+</html>

@@ -1,0 +1,15 @@
+*~
+*.keystore
+hooks/
+R.java
+platforms/android/CordovaLib/
+platforms/android/assets/
+platforms/android/bin/
+platforms/android/build.xml
+platforms/android/cordova/
+platforms/android/custom_rules.xml
+platforms/android/local.properties
+platforms/android/obj/
+platforms/android/platform_www/
+platforms/android/proguard-project.txt
+platforms/android/project.properties
